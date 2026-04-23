@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitive Definition
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Role-based logic (simplified for demo, usually involves checking an /admins/ collection)
+    function isAdmin() {
+      // For this demo, any signed-in user is treated as a coordinator
+      return isSignedIn();
+    }
+
+    // Validation Helpers
+    function isValidReport(data) {
+      return data.keys().hasAll(['rawText', 'category', 'urgencyScore', 'priorityScore', 'summary', 'keywords', 'location', 'createdAt', 'status'])
+        && data.rawText is string && data.rawText.size() <= 10000
+        && data.category in ['Medical', 'Food', 'Infrastructure', 'Safety']
+        && data.urgencyScore is number
+        && data.priorityScore is number
+        && data.summary is string && data.summary.size() <= 500
+        && data.keywords is list
+        && data.location is map
+        && data.location.latitude is number
+        && data.location.longitude is number
+        && data.status in ['pending', 'assigned', 'resolved'];
+    }
+
+    // 1. The "Master Gate" (Reports)
+    match /reports/{reportId} {
+      // 3. Path Variable Hardening
+      allow get: if isSignedIn() && isValidId(reportId);
+      
+      // 8. Secure List Queries
+      allow list: if isSignedIn(); 
+
+      allow create: if isSignedIn() 
+        && isValidReport(incoming())
+        && incoming().createdAt == request.time; // 10. Temporal Integrity
+
+      allow update: if isSignedIn() 
+        && (
+          // Action: Resolve
+          (incoming().diff(existing()).affectedKeys().hasOnly(['status']) && incoming().status == 'resolved') ||
+          // Action: Assign
+          (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'assignedVolunteerId', 'assignedVolunteerName']) && incoming().status == 'assigned')
+        );
+    }
+
+    // Volunteers Security
+    match /volunteers/{volunteerId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

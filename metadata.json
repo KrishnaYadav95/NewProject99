@@ -1,0 +1,6 @@
+{
+  "name": "Relief Orchestrator",
+  "description": "AI-powered disaster relief system for analyzing reports and matching volunteers.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": []
+}

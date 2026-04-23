@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "Report": {
+      "title": "Field Report",
+      "description": "A disaster report from the field.",
+      "type": "object",
+      "properties": {
+        "rawText": { "type": "string" },
+        "category": { "type": "string", "enum": ["Medical", "Food", "Infrastructure", "Safety"] },
+        "urgencyScore": { "type": "number" },
+        "priorityScore": { "type": "number" },
+        "summary": { "type": "string" },
+        "keywords": { "type": "array", "items": { "type": "string" } },
+        "location": {
+          "type": "object",
+          "properties": {
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" }
+          },
+          "required": ["latitude", "longitude"]
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "assignedVolunteerId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "assigned", "resolved"] }
+      },
+      "required": ["rawText", "urgencyScore", "priorityScore", "location", "createdAt", "status"]
+    },
+    "Volunteer": {
+      "title": "Volunteer",
+      "description": "A volunteer available for disaster relief.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" }
+          },
+          "required": ["latitude", "longitude"]
+        },
+        "isAvailable": { "type": "boolean" },
+        "skills": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["name", "location", "isAvailable"]
+    }
+  },
+  "firestore": {
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Collection of crisis reports."
+    },
+    "/volunteers/{volunteerId}": {
+      "schema": "Volunteer",
+      "description": "Collection of register volunteers."
+    }
+  }
+}
