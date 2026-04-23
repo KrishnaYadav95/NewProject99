@@ -8,7 +8,8 @@ service cloud.firestore {
 
     // Phase 3: Primitive Definition
     function isSignedIn() {
-      return request.auth != null;
+      // Logic removed for authentication-free mode
+      return true;
     }
 
     function isValidId(id) {
@@ -23,10 +24,9 @@ service cloud.firestore {
       return resource.data;
     }
 
-    // Role-based logic (simplified for demo, usually involves checking an /admins/ collection)
+    // Role-based logic (Disabled for auth-free mode)
     function isAdmin() {
-      // For this demo, any signed-in user is treated as a coordinator
-      return isSignedIn();
+      return true;
     }
 
     // Validation Helpers

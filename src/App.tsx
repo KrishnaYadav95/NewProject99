@@ -503,84 +503,7 @@ const CrisisCard = ({ report, volunteers }: { report: Report; volunteers: Volunt
   );
 };
 
-import { 
-  onAuthStateChanged, 
-  signInWithPopup, 
-  GoogleAuthProvider,
-  User,
-  signOut
-} from "firebase/auth";
-import { auth } from "./lib/firebase";
-
 // --- Components ---
-
-const LoginScreen = ({ onGuestLogin }: { onGuestLogin: () => void }) => {
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-
-  const handleLogin = async () => {
-    setIsLoggingIn(true);
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Login failed:", error);
-      // Optional: Inform user about authorized domains
-      alert("Login failed. If you're on a new domain (like Vercel), ensure it's added to 'Authorized Domains' in your Firebase Console.");
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
-  return (
-    <div className="flex h-screen w-full items-center justify-center bg-[#0F172A] p-6">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md bg-white rounded-3xl p-10 shadow-2xl overflow-hidden relative"
-      >
-        <div className="absolute top-0 left-0 w-full h-2 bg-blue-600" />
-        <div className="flex flex-col items-center text-center">
-          <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mb-6 shadow-lg rotate-3">
-            <ShieldAlert className="text-white w-8 h-8" />
-          </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2 uppercase">Command Access</h1>
-          <p className="text-slate-500 font-medium text-sm mb-8">NGO Disaster Relief Orchestrator</p>
-          
-          <div className="w-full space-y-3">
-            <button 
-              onClick={handleLogin}
-              disabled={isLoggingIn}
-              className="w-full flex items-center justify-center gap-3 bg-[#0F172A] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-xl disabled:bg-slate-200"
-            >
-              {isLoggingIn ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 bg-white p-1 rounded-full" alt="Google" />
-              )}
-              Sign in with Google
-            </button>
-
-            <button 
-              onClick={onGuestLogin}
-              className="w-full py-4 text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] hover:text-slate-600 transition-colors"
-            >
-              Enter in Demo Mode
-            </button>
-          </div>
-          
-          <div className="mt-8 pt-8 border-t border-slate-100 flex gap-4 opacity-50">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              <CheckCircle2 className="w-3 h-3" /> Encrypted
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              <ShieldAlert className="w-3 h-3" /> Secure AI
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  );
-};
 
 // --- Main App ---
 
@@ -592,17 +515,6 @@ export default function App() {
   const [newReport, setNewReport] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-
-  const handleGuestLogin = () => {
-    setUser({
-      displayName: "Demo Commander",
-      email: "demo@orchestrator.ai",
-      photoURL: null,
-      isGuest: true
-    });
-  };
 
   const handleSeed = async () => {
     setIsSeeding(true);
@@ -616,35 +528,13 @@ export default function App() {
   };
 
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, (u) => {
-      if (u) {
-        setUser(u);
-      } else {
-        // Automatically enter Demo Mode if no user is found
-        handleGuestLogin();
-      }
-      setIsInitialLoading(false);
-    });
-    return () => unsubAuth();
-  }, []);
-
-  useEffect(() => {
-    if (!user) {
-      setReports([]);
-      setVolunteers([]);
-      return;
-    }
     const unsubReports = subscribeToReports(setReports);
     const unsubVolunteers = subscribeToVolunteers(setVolunteers);
     return () => {
       unsubReports();
       unsubVolunteers();
     };
-  }, [user]);
-
-  const handleLogout = async () => {
-    await signOut(auth);
-  };
+  }, []);
 
   const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -695,14 +585,6 @@ export default function App() {
       setIsSubmitting(false);
     }
   };
-
-  if (isInitialLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-[#F1F5F9]">
-        <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
-      </div>
-    );
-  }
 
   // Gate removed - app starts in Guest/Demo mode automatically
 
@@ -782,30 +664,8 @@ export default function App() {
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Real-time intelligence from Google Gemini API</p>
           </div>
           <div className="flex gap-6 items-center">
-            {user?.isGuest && (
-              <button 
-                onClick={() => {
-                  const provider = new GoogleAuthProvider();
-                  signInWithPopup(auth, provider).catch(err => {
-                    alert(`Login Error: ${err.code}. Check Firebase Authorized Domains.`);
-                  });
-                }}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-blue-100 transition-colors"
-              >
-                <ShieldAlert className="w-3 h-3" /> Connect Google
-              </button>
-            )}
             <div className="text-right hidden sm:block">
-              <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">
-                {user?.displayName || 'Active Agent'} 
-                {user?.isGuest && <span className="text-amber-500 ml-1">(Demo)</span>}
-              </p>
-              <button 
-                onClick={handleLogout}
-                className="text-[10px] text-blue-600 uppercase font-black tracking-widest hover:underline"
-              >
-                {user?.isGuest ? "Reset App" : "Logout"}
-              </button>
+              <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest opacity-50">Active Incident Commander</p>
             </div>
             <div className="w-px h-10 bg-slate-100 hidden sm:block"></div>
             <div className="text-right">
@@ -818,11 +678,7 @@ export default function App() {
               <p className="text-xl font-mono font-bold text-blue-600">98.4%</p>
             </div>
             <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 overflow-hidden">
-              {user?.photoURL ? (
-                <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                <Users className="w-4 h-4" />
-              )}
+              <Users className="w-4 h-4" />
             </div>
           </div>
         </header>
